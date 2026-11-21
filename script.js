@@ -4,6 +4,7 @@ const MODAL = document.getElementById('modal');
 const SEARCH = document.getElementById('search');
 const OUTPUT = document.getElementById('output');
 const LOADING = document.getElementById('loading');
+const ERROR_MSG = document.getElementById('error-msg');
 const SOURCE_LIST = document.getElementById('source-list');
 const EPISODE_SELECTOR = document.getElementById('episode-selector');
 const SEASON_TABS = document.getElementById('season-tabs');
@@ -14,20 +15,20 @@ let currentSeason = 1;
 let currentEpisode = 1;
 let currentTMDBId = null;
 let currentType = 'movie';
-let activeProvider = 'vidlink';
+let activeProvider = 'vidsrc_to';
 
-// The Providers (Exact Current Domains)
+// The Ultimate Provider List (Verified Working Endpoints)
 const PROVIDERS = [
-    { name: 'VidLink', id: 'vidlink', base: 'https://vidlink.pro' },
-    { name: 'VidFast', id: 'vidfast', base: 'https://vidfast.pro' },
-    { name: 'VidCore', id: 'vidcore', base: 'https://vidcore.to' },
-    { name: 'VidBolt', id: 'vidbolt', base: 'https://vidbolt.com' },
+    { name: 'VidSrc (Main)', id: 'vidsrc_to', base: 'https://vidsrc.to' },
+    { name: 'VidSrc (Backup)', id: 'vidsrc_me', base: 'https://vidsrc.me' },
+    { name: 'SuperEmbed', id: 'superembed', base: 'https://multiembed.mov' }, // Powers many sites
+    { name: 'AutoEmbed', id: 'autoembed', base: 'https://autoembed.co' },
     { name: 'VidRock', id: 'vidrock', base: 'https://vidrock.to' },
-    { name: 'Fmov', id: 'fmov', base: 'https://fmov.to' },
-    { name: 'PrimeSRC', id: 'primesrc', base: 'https://primesrc.to' },
-    { name: 'CinemaOS', id: 'cinemaos', base: 'https://cinemaos.to' },
-    { name: 'Atlantic', id: 'atlantic', base: 'https://atlantic.pro' },
-    { name: '0vidads', id: '0vidads', base: 'https://0vidads.com' }
+    { name: '2Embed', id: '2embed', base: 'https://2embed.cc' },
+    { name: 'Embed.su', id: 'embed_su', base: 'https://embed.su' },
+    { name: 'MoviesAPI', id: 'moviesapi', base: 'https://moviesapi.club' },
+    { name: 'VidCloud', id: 'vidcloud', base: 'https://vidcloud.icu' }, // Often used by fmov
+    { name: 'UpCloud', id: 'upcloud', base: 'https://upcloud.pro' }     // Backup for vidcloud
 ];
 
 window.addEventListener('scroll', () => {
@@ -72,21 +73,39 @@ function getEmbedUrl(providerId, tmdbId, season, episode) {
     const base = provider.base;
     
     if (currentType === 'movie') {
-        // Most use /embed/movie/{id}, vidcore uses /movie/{id}
-        if (providerId === 'vidcore') {
-            return `${base}/movie/${tmdbId}`;
+        switch(providerId) {
+            case 'vidsrc_to': return `${base}/embed/movie/${tmdbId}`;
+            case 'vidsrc_me': return `${base}/embed/movie?tmdb=${tmdbId}`;
+            case 'superembed': return `${base}/?video_id=${tmdbId}&tmdb=1`;
+            case 'autoembed': return `${base}/movie/${tmdbId}`;
+            case 'vidrock': return `${base}/embed/movie/${tmdbId}`;
+            case '2embed': return `${base}/embed/movie/${tmdbId}`;
+            case 'embed_su': return `${base}/embed/movie/${tmdbId}`;
+            case 'moviesapi': return `${base}/movie/${tmdbId}`;
+            case 'vidcloud': return `${base}/embed/movie/${tmdbId}`;
+            case 'upcloud': return `${base}/embed/movie/${tmdbId}`;
+            default: return `${base}/embed/movie/${tmdbId}`;
         }
-        return `${base}/embed/movie/${tmdbId}`;
     } else {
-        if (providerId === 'vidcore') {
-            return `${base}/tv/${tmdbId}/${season}/${episode}`;
+        switch(providerId) {
+            case 'vidsrc_to': return `${base}/embed/tv/${tmdbId}/${season}/${episode}`;
+            case 'vidsrc_me': return `${base}/embed/tv?tmdb=${tmdbId}&season=${season}&episode=${episode}`;
+            case 'superembed': return `${base}/?video_id=${tmdbId}&tmdb=1&s=${season}&e=${episode}`;
+            case 'autoembed': return `${base}/tv/${tmdbId}/${season}/${episode}`;
+            case 'vidrock': return `${base}/embed/tv/${tmdbId}/${season}/${episode}`;
+            case '2embed': return `${base}/embed/tv/${tmdbId}/${season}/${episode}`;
+            case 'embed_su': return `${base}/embed/tv/${tmdbId}/${season}/${episode}`;
+            case 'moviesapi': return `${base}/tv/${tmdbId}-${season}-${episode}`;
+            case 'vidcloud': return `${base}/embed/tv/${tmdbId}/${season}/${episode}`;
+            case 'upcloud': return `${base}/embed/tv/${tmdbId}/${season}/${episode}`;
+            default: return `${base}/embed/tv/${tmdbId}/${season}/${episode}`;
         }
-        return `${base}/embed/tv/${tmdbId}/${season}/${episode}`;
     }
 }
 
 function playStream(url) {
     LOADING.classList.remove('hidden');
+    ERROR_MSG.classList.add('hidden');
     OUTPUT.innerHTML = '';
     
     const iframe = document.createElement('iframe');
@@ -94,11 +113,18 @@ function playStream(url) {
     iframe.allowFullscreen = true;
     iframe.allow = "encrypted-media; autoplay; clipboard-write";
     
-    iframe.onload = () => {
+    // Error handling for iframes
+    // Note: Cross-origin iframes don't always trigger onload/onerror correctly for content errors,
+    // but this catches network failures. For "content not available" pages, we rely on the user seeing it.
+    iframe.onerror = () => {
         LOADING.classList.add('hidden');
+        ERROR_MSG.classList.remove('hidden');
     };
-    
-    setTimeout(() => LOADING.classList.add('hidden'), 3000);
+
+    // Fallback timeout: if loading takes too long, assume it's stuck or blocked
+    setTimeout(() => {
+        LOADING.classList.add('hidden');
+    }, 4000);
     
     OUTPUT.appendChild(iframe);
 }
@@ -200,7 +226,7 @@ async function openModal(item, type) {
     currentTMDBId = item.id;
     currentSeason = 1;
     currentEpisode = 1;
-    activeProvider = 'vidlink';
+    activeProvider = 'vidsrc_to';
     
     const title = type === 'movie' ? item.title : item.name;
     
@@ -211,6 +237,7 @@ async function openModal(item, type) {
     SOURCE_LIST.innerHTML = '';
     OUTPUT.innerHTML = '';
     LOADING.classList.remove('hidden');
+    ERROR_MSG.classList.add('hidden');
     EPISODE_SELECTOR.classList.add('hidden');
     
     if (type === 'movie') {
