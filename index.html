@@ -1,0 +1,58 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>PrivSpace</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <nav class="navbar">
+        <div class="nav-left">
+            <h1 class="logo">PRIVSPACE</h1>
+            <div class="nav-links">
+                <button class="nav-btn active" data-type="movie">Movies</button>
+                <button class="nav-btn" data-type="tv">TV Shows</button>
+            </div>
+        </div>
+        <div class="nav-right">
+            <input type="text" id="search" placeholder="Search titles...">
+        </div>
+    </nav>
+
+    <main id="grid" class="content-grid"></main>
+
+    <div id="modal" class="modal-overlay hidden">
+        <div class="modal-container">
+            <button id="close" class="close-btn">&times;</button>
+            
+            <div class="modal-header">
+                <img id="m-poster" src="" alt="">
+                <div class="modal-info">
+                    <h2 id="m-title"></h2>
+                    <p id="m-plot"></p>
+                </div>
+            </div>
+
+            <div id="episode-selector" class="episode-section hidden">
+                <h3>Browse Episodes</h3>
+                <div id="season-tabs" class="season-tabs"></div>
+                <div id="episode-list" class="episode-grid"></div>
+            </div>
+
+            <div class="player-section">
+                <div id="player-container">
+                    <div id="output"></div>
+                    <div id="loading" class="loading-overlay">
+                        <div class="spinner"></div>
+                        <p>Buffering stream...</p>
+                    </div>
+                </div>
+                <div id="source-list" class="source-buttons"></div>
+            </div>
+        </div>
+    </div>
+
+    <script src="script.js"></script>
+</body>
+</html>
