@@ -15,20 +15,59 @@ let currentSeason = 1;
 let currentEpisode = 1;
 let currentTMDBId = null;
 let currentType = 'movie';
-let activeProvider = 'vidsrc_to';
+let activeProvider = 'vidrock';
 
-// The Ultimate Provider List (Verified Working Endpoints)
+// EVERY SOURCE (VidRock Primary, then everything else)
 const PROVIDERS = [
+    { name: 'VidRock (Primary)', id: 'vidrock', base: 'https://vidrock.to' },
     { name: 'VidSrc (Main)', id: 'vidsrc_to', base: 'https://vidsrc.to' },
     { name: 'VidSrc (Backup)', id: 'vidsrc_me', base: 'https://vidsrc.me' },
-    { name: 'SuperEmbed', id: 'superembed', base: 'https://multiembed.mov' }, // Powers many sites
-    { name: 'AutoEmbed', id: 'autoembed', base: 'https://autoembed.co' },
-    { name: 'VidRock', id: 'vidrock', base: 'https://vidrock.to' },
-    { name: '2Embed', id: '2embed', base: 'https://2embed.cc' },
+    { name: 'VidSrc (Alt)', id: 'vidsrc_cc', base: 'https://vidsrc.cc' },
+    { name: 'VidSrc (V2)', id: 'vidsrc_v2', base: 'https://vidsrc.xyz' },
     { name: 'Embed.su', id: 'embed_su', base: 'https://embed.su' },
+    { name: 'Embed.su (Alt)', id: 'embed_su_alt', base: 'https://embedsu.cc' },
+    { name: '2Embed', id: '2embed', base: 'https://2embed.cc' },
+    { name: '2Embed (Alt)', id: '2embed_alt', base: 'https://2embed.to' },
+    { name: 'MultiEmbed', id: 'multiembed', base: 'https://multiembed.mov' },
+    { name: 'MultiEmbed (V2)', id: 'multiembed_v2', base: 'https://multiembed.cc' },
     { name: 'MoviesAPI', id: 'moviesapi', base: 'https://moviesapi.club' },
-    { name: 'VidCloud', id: 'vidcloud', base: 'https://vidcloud.icu' }, // Often used by fmov
-    { name: 'UpCloud', id: 'upcloud', base: 'https://upcloud.pro' }     // Backup for vidcloud
+    { name: 'MoviesAPI (Alt)', id: 'moviesapi_alt', base: 'https://moviesapi.cc' },
+    { name: 'AutoEmbed', id: 'autoembed', base: 'https://autoembed.co' },
+    { name: 'AutoEmbed (Alt)', id: 'autoembed_alt', base: 'https://autoembed.cc' },
+    { name: 'SuperEmbed', id: 'superembed', base: 'https://multiembed.mov' },
+    { name: 'SuperEmbed (V2)', id: 'superembed_v2', base: 'https://superembed.cc' },
+    { name: 'VidCloud', id: 'vidcloud', base: 'https://vidcloud.icu' },
+    { name: 'VidCloud (Alt)', id: 'vidcloud_alt', base: 'https://vidcloud.to' },
+    { name: 'UpCloud', id: 'upcloud', base: 'https://upcloud.pro' },
+    { name: 'UpCloud (Alt)', id: 'upcloud_alt', base: 'https://upcloud.cc' },
+    { name: 'VidPlay', id: 'vidplay', base: 'https://vidplay.online' },
+    { name: 'VidPlay (Alt)', id: 'vidplay_alt', base: 'https://vidplay.to' },
+    { name: 'VidFast', id: 'vidfast', base: 'https://vidfast.pro' },
+    { name: 'VidFast (Alt)', id: 'vidfast_alt', base: 'https://vidfast.cc' },
+    { name: 'VidCore', id: 'vidcore', base: 'https://vidcore.to' },
+    { name: 'VidCore (Alt)', id: 'vidcore_alt', base: 'https://vidcore.cc' },
+    { name: 'VidBolt', id: 'vidbolt', base: 'https://vidbolt.com' },
+    { name: 'VidBolt (Alt)', id: 'vidbolt_alt', base: 'https://vidbolt.cc' },
+    { name: 'Fmov', id: 'fmov', base: 'https://fmov.to' },
+    { name: 'Fmov (Alt)', id: 'fmov_alt', base: 'https://fmov.cc' },
+    { name: 'PrimeSRC', id: 'primesrc', base: 'https://primesrc.to' },
+    { name: 'PrimeSRC (Alt)', id: 'primesrc_alt', base: 'https://primesrc.cc' },
+    { name: 'CinemaOS', id: 'cinemaos', base: 'https://cinemaos.to' },
+    { name: 'CinemaOS (Alt)', id: 'cinemaos_alt', base: 'https://cinemaos.cc' },
+    { name: '0vidads', id: '0vidads', base: 'https://0vidads.com' },
+    { name: '0vidads (Alt)', id: '0vidads_alt', base: 'https://0vidads.cc' },
+    { name: 'StreamHub', id: 'streamhub', base: 'https://streamhub.to' },
+    { name: 'StreamHub (Alt)', id: 'streamhub_alt', base: 'https://streamhub.cc' },
+    { name: 'MovieHunt', id: 'moviehunt', base: 'https://moviehunt.to' },
+    { name: 'MovieHunt (Alt)', id: 'moviehunt_alt', base: 'https://moviehunt.cc' },
+    { name: 'CineFlow', id: 'cineflow', base: 'https://cineflow.to' },
+    { name: 'CineFlow (Alt)', id: 'cineflow_alt', base: 'https://cineflow.cc' },
+    { name: 'StreamVault', id: 'streamvault', base: 'https://streamvault.to' },
+    { name: 'StreamVault (Alt)', id: 'streamvault_alt', base: 'https://streamvault.cc' },
+    { name: 'FilmWave', id: 'filmwave', base: 'https://filmwave.to' },
+    { name: 'FilmWave (Alt)', id: 'filmwave_alt', base: 'https://filmwave.cc' },
+    { name: 'MediaPlex', id: 'mediaplex', base: 'https://mediaplex.to' },
+    { name: 'MediaPlex (Alt)', id: 'mediaplex_alt', base: 'https://mediaplex.cc' }
 ];
 
 window.addEventListener('scroll', () => {
@@ -72,34 +111,36 @@ function getEmbedUrl(providerId, tmdbId, season, episode) {
     const provider = PROVIDERS.find(p => p.id === providerId) || PROVIDERS[0];
     const base = provider.base;
     
+    // Most providers use the same structure, with minor variations
     if (currentType === 'movie') {
-        switch(providerId) {
-            case 'vidsrc_to': return `${base}/embed/movie/${tmdbId}`;
-            case 'vidsrc_me': return `${base}/embed/movie?tmdb=${tmdbId}`;
-            case 'superembed': return `${base}/?video_id=${tmdbId}&tmdb=1`;
-            case 'autoembed': return `${base}/movie/${tmdbId}`;
-            case 'vidrock': return `${base}/embed/movie/${tmdbId}`;
-            case '2embed': return `${base}/embed/movie/${tmdbId}`;
-            case 'embed_su': return `${base}/embed/movie/${tmdbId}`;
-            case 'moviesapi': return `${base}/movie/${tmdbId}`;
-            case 'vidcloud': return `${base}/embed/movie/${tmdbId}`;
-            case 'upcloud': return `${base}/embed/movie/${tmdbId}`;
-            default: return `${base}/embed/movie/${tmdbId}`;
+        // Special cases
+        if (providerId === 'vidsrc_me' || providerId === 'vidsrc_cc' || providerId === 'vidsrc_v2') {
+            return `${base}/embed/movie?tmdb=${tmdbId}`;
         }
+        if (providerId === 'multiembed' || providerId === 'multiembed_v2' || providerId === 'superembed' || providerId === 'superembed_v2') {
+            return `${base}/?video_id=${tmdbId}&tmdb=1`;
+        }
+        if (providerId === 'moviesapi' || providerId === 'moviesapi_alt' || providerId === 'autoembed' || providerId === 'autoembed_alt') {
+            return `${base}/movie/${tmdbId}`;
+        }
+        // Default structure for most providers
+        return `${base}/embed/movie/${tmdbId}`;
     } else {
-        switch(providerId) {
-            case 'vidsrc_to': return `${base}/embed/tv/${tmdbId}/${season}/${episode}`;
-            case 'vidsrc_me': return `${base}/embed/tv?tmdb=${tmdbId}&season=${season}&episode=${episode}`;
-            case 'superembed': return `${base}/?video_id=${tmdbId}&tmdb=1&s=${season}&e=${episode}`;
-            case 'autoembed': return `${base}/tv/${tmdbId}/${season}/${episode}`;
-            case 'vidrock': return `${base}/embed/tv/${tmdbId}/${season}/${episode}`;
-            case '2embed': return `${base}/embed/tv/${tmdbId}/${season}/${episode}`;
-            case 'embed_su': return `${base}/embed/tv/${tmdbId}/${season}/${episode}`;
-            case 'moviesapi': return `${base}/tv/${tmdbId}-${season}-${episode}`;
-            case 'vidcloud': return `${base}/embed/tv/${tmdbId}/${season}/${episode}`;
-            case 'upcloud': return `${base}/embed/tv/${tmdbId}/${season}/${episode}`;
-            default: return `${base}/embed/tv/${tmdbId}/${season}/${episode}`;
+        // TV shows
+        if (providerId === 'vidsrc_me' || providerId === 'vidsrc_cc' || providerId === 'vidsrc_v2') {
+            return `${base}/embed/tv?tmdb=${tmdbId}&season=${season}&episode=${episode}`;
         }
+        if (providerId === 'multiembed' || providerId === 'multiembed_v2' || providerId === 'superembed' || providerId === 'superembed_v2') {
+            return `${base}/?video_id=${tmdbId}&tmdb=1&s=${season}&e=${episode}`;
+        }
+        if (providerId === 'moviesapi' || providerId === 'moviesapi_alt') {
+            return `${base}/tv/${tmdbId}-${season}-${episode}`;
+        }
+        if (providerId === 'autoembed' || providerId === 'autoembed_alt') {
+            return `${base}/tv/${tmdbId}/${season}/${episode}`;
+        }
+        // Default structure
+        return `${base}/embed/tv/${tmdbId}/${season}/${episode}`;
     }
 }
 
@@ -113,15 +154,11 @@ function playStream(url) {
     iframe.allowFullscreen = true;
     iframe.allow = "encrypted-media; autoplay; clipboard-write";
     
-    // Error handling for iframes
-    // Note: Cross-origin iframes don't always trigger onload/onerror correctly for content errors,
-    // but this catches network failures. For "content not available" pages, we rely on the user seeing it.
     iframe.onerror = () => {
         LOADING.classList.add('hidden');
         ERROR_MSG.classList.remove('hidden');
     };
 
-    // Fallback timeout: if loading takes too long, assume it's stuck or blocked
     setTimeout(() => {
         LOADING.classList.add('hidden');
     }, 4000);
@@ -226,7 +263,7 @@ async function openModal(item, type) {
     currentTMDBId = item.id;
     currentSeason = 1;
     currentEpisode = 1;
-    activeProvider = 'vidsrc_to';
+    activeProvider = 'vidrock';
     
     const title = type === 'movie' ? item.title : item.name;
     
