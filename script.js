@@ -14,60 +14,21 @@ let currentShow = null;
 let currentSeason = 1;
 let currentEpisode = 1;
 let currentTMDBId = null;
+let currentImdbId = null; // Added for providers that require it
 let currentType = 'movie';
 let activeProvider = 'vidrock';
 
-// EVERY SOURCE (VidRock Primary, then everything else)
 const PROVIDERS = [
     { name: 'VidRock (Primary)', id: 'vidrock', base: 'https://vidrock.to' },
-    { name: 'VidSrc (Main)', id: 'vidsrc_to', base: 'https://vidsrc.to' },
-    { name: 'VidSrc (Backup)', id: 'vidsrc_me', base: 'https://vidsrc.me' },
-    { name: 'VidSrc (Alt)', id: 'vidsrc_cc', base: 'https://vidsrc.cc' },
-    { name: 'VidSrc (V2)', id: 'vidsrc_v2', base: 'https://vidsrc.xyz' },
-    { name: 'Embed.su', id: 'embed_su', base: 'https://embed.su' },
-    { name: 'Embed.su (Alt)', id: 'embed_su_alt', base: 'https://embedsu.cc' },
-    { name: '2Embed', id: '2embed', base: 'https://2embed.cc' },
-    { name: '2Embed (Alt)', id: '2embed_alt', base: 'https://2embed.to' },
-    { name: 'MultiEmbed', id: 'multiembed', base: 'https://multiembed.mov' },
-    { name: 'MultiEmbed (V2)', id: 'multiembed_v2', base: 'https://multiembed.cc' },
-    { name: 'MoviesAPI', id: 'moviesapi', base: 'https://moviesapi.club' },
-    { name: 'MoviesAPI (Alt)', id: 'moviesapi_alt', base: 'https://moviesapi.cc' },
-    { name: 'AutoEmbed', id: 'autoembed', base: 'https://autoembed.co' },
-    { name: 'AutoEmbed (Alt)', id: 'autoembed_alt', base: 'https://autoembed.cc' },
-    { name: 'SuperEmbed', id: 'superembed', base: 'https://multiembed.mov' },
-    { name: 'SuperEmbed (V2)', id: 'superembed_v2', base: 'https://superembed.cc' },
-    { name: 'VidCloud', id: 'vidcloud', base: 'https://vidcloud.icu' },
-    { name: 'VidCloud (Alt)', id: 'vidcloud_alt', base: 'https://vidcloud.to' },
-    { name: 'UpCloud', id: 'upcloud', base: 'https://upcloud.pro' },
-    { name: 'UpCloud (Alt)', id: 'upcloud_alt', base: 'https://upcloud.cc' },
-    { name: 'VidPlay', id: 'vidplay', base: 'https://vidplay.online' },
-    { name: 'VidPlay (Alt)', id: 'vidplay_alt', base: 'https://vidplay.to' },
-    { name: 'VidFast', id: 'vidfast', base: 'https://vidfast.pro' },
-    { name: 'VidFast (Alt)', id: 'vidfast_alt', base: 'https://vidfast.cc' },
-    { name: 'VidCore', id: 'vidcore', base: 'https://vidcore.to' },
-    { name: 'VidCore (Alt)', id: 'vidcore_alt', base: 'https://vidcore.cc' },
-    { name: 'VidBolt', id: 'vidbolt', base: 'https://vidbolt.com' },
-    { name: 'VidBolt (Alt)', id: 'vidbolt_alt', base: 'https://vidbolt.cc' },
-    { name: 'Fmov', id: 'fmov', base: 'https://fmov.to' },
-    { name: 'Fmov (Alt)', id: 'fmov_alt', base: 'https://fmov.cc' },
-    { name: 'PrimeSRC', id: 'primesrc', base: 'https://primesrc.to' },
-    { name: 'PrimeSRC (Alt)', id: 'primesrc_alt', base: 'https://primesrc.cc' },
-    { name: 'CinemaOS', id: 'cinemaos', base: 'https://cinemaos.to' },
-    { name: 'CinemaOS (Alt)', id: 'cinemaos_alt', base: 'https://cinemaos.cc' },
-    { name: '0vidads', id: '0vidads', base: 'https://0vidads.com' },
-    { name: '0vidads (Alt)', id: '0vidads_alt', base: 'https://0vidads.cc' },
-    { name: 'StreamHub', id: 'streamhub', base: 'https://streamhub.to' },
-    { name: 'StreamHub (Alt)', id: 'streamhub_alt', base: 'https://streamhub.cc' },
-    { name: 'MovieHunt', id: 'moviehunt', base: 'https://moviehunt.to' },
-    { name: 'MovieHunt (Alt)', id: 'moviehunt_alt', base: 'https://moviehunt.cc' },
-    { name: 'CineFlow', id: 'cineflow', base: 'https://cineflow.to' },
-    { name: 'CineFlow (Alt)', id: 'cineflow_alt', base: 'https://cineflow.cc' },
-    { name: 'StreamVault', id: 'streamvault', base: 'https://streamvault.to' },
-    { name: 'StreamVault (Alt)', id: 'streamvault_alt', base: 'https://streamvault.cc' },
-    { name: 'FilmWave', id: 'filmwave', base: 'https://filmwave.to' },
-    { name: 'FilmWave (Alt)', id: 'filmwave_alt', base: 'https://filmwave.cc' },
-    { name: 'MediaPlex', id: 'mediaplex', base: 'https://mediaplex.to' },
-    { name: 'MediaPlex (Alt)', id: 'mediaplex_alt', base: 'https://mediaplex.cc' }
+    { name: 'VidLink', id: 'vidlink', base: 'https://vidlink.pro' },
+    { name: 'VidFast', id: 'vidfast', base: 'https://vidfast.vc' },
+    { name: 'VidCore', id: 'vidcore', base: 'https://vidcore.io' },
+    { name: 'VidBolt', id: 'vidbolt', base: 'https://vidbolt.pro' },
+    { name: 'Fmov', id: 'fmov', base: 'https://fmov.my' },
+    { name: 'PrimeSRC', id: 'primesrc', base: 'https://primesrc.me' },
+    { name: 'Atlantic', id: 'atlantic', base: 'https://atlantic.st' },
+    { name: '0vidads', id: '0vidads', base: 'https://0vidads.top' },
+    { name: 'VidSrc (Fallback)', id: 'vidsrc_to', base: 'https://vidsrc.to' }
 ];
 
 window.addEventListener('scroll', () => {
@@ -107,40 +68,41 @@ function renderGrid(items, type) {
     });
 }
 
-function getEmbedUrl(providerId, tmdbId, season, episode) {
+function getEmbedUrl(providerId, tmdbId, imdbId, season, episode) {
     const provider = PROVIDERS.find(p => p.id === providerId) || PROVIDERS[0];
     const base = provider.base;
-    
-    // Most providers use the same structure, with minor variations
+    const idToUse = providerId === 'primesrc' ? (imdbId || tmdbId) : tmdbId;
+    const idParam = providerId === 'primesrc' ? 'imdb' : 'tmdb'; // primesrc uses ?imdb=, others might use path
+
     if (currentType === 'movie') {
-        // Special cases
-        if (providerId === 'vidsrc_me' || providerId === 'vidsrc_cc' || providerId === 'vidsrc_v2') {
-            return `${base}/embed/movie?tmdb=${tmdbId}`;
+        switch(providerId) {
+            case 'vidrock': return `${base}/embed/movie/${tmdbId}`;
+            case 'vidlink': return `${base}/movie/${tmdbId}`;
+            case 'vidfast': return `${base}/movie/${tmdbId}?autoPlay=true`;
+            case 'vidcore': return `${base}/movie/${tmdbId}?autoPlay=true`;
+            case 'vidbolt': return `${base}/movie/${tmdbId}`;
+            case 'fmov': return `${base}/embed/movie/${tmdbId}`;
+            case 'primesrc': return `${base}/embed/movie?imdb=${idToUse}`;
+            case 'atlantic': return `${base}/embed/movie/${tmdbId}`;
+            case '0vidads': return `${base}/embed/movie/${tmdbId}?nextEpisode=true&autoplayNextEpisode=true&episodeSelector=true&overlay=true&color=8B5CF6&branding=0vidads&subtitle=english&server=valstrax`;
+            case 'vidsrc_to': return `${base}/embed/movie/${tmdbId}`;
+            default: return `${base}/movie/${tmdbId}`;
         }
-        if (providerId === 'multiembed' || providerId === 'multiembed_v2' || providerId === 'superembed' || providerId === 'superembed_v2') {
-            return `${base}/?video_id=${tmdbId}&tmdb=1`;
-        }
-        if (providerId === 'moviesapi' || providerId === 'moviesapi_alt' || providerId === 'autoembed' || providerId === 'autoembed_alt') {
-            return `${base}/movie/${tmdbId}`;
-        }
-        // Default structure for most providers
-        return `${base}/embed/movie/${tmdbId}`;
     } else {
-        // TV shows
-        if (providerId === 'vidsrc_me' || providerId === 'vidsrc_cc' || providerId === 'vidsrc_v2') {
-            return `${base}/embed/tv?tmdb=${tmdbId}&season=${season}&episode=${episode}`;
+        // TV Shows (Adapted to match the movie patterns)
+        switch(providerId) {
+            case 'vidrock': return `${base}/embed/tv/${tmdbId}/${season}/${episode}`;
+            case 'vidlink': return `${base}/tv/${tmdbId}/${season}/${episode}`;
+            case 'vidfast': return `${base}/tv/${tmdbId}/${season}/${episode}?autoPlay=true`;
+            case 'vidcore': return `${base}/tv/${tmdbId}/${season}/${episode}?autoPlay=true`;
+            case 'vidbolt': return `${base}/tv/${tmdbId}/${season}/${episode}`;
+            case 'fmov': return `${base}/embed/tv/${tmdbId}/${season}/${episode}`;
+            case 'primesrc': return `${base}/embed/tv?imdb=${idToUse}&season=${season}&episode=${episode}`;
+            case 'atlantic': return `${base}/embed/tv/${tmdbId}/${season}/${episode}`;
+            case '0vidads': return `${base}/embed/tv/${tmdbId}/${season}/${episode}?nextEpisode=true&autoplayNextEpisode=true&episodeSelector=true&overlay=true&color=8B5CF6&branding=0vidads&subtitle=english&server=valstrax`;
+            case 'vidsrc_to': return `${base}/embed/tv/${tmdbId}/${season}/${episode}`;
+            default: return `${base}/tv/${tmdbId}/${season}/${episode}`;
         }
-        if (providerId === 'multiembed' || providerId === 'multiembed_v2' || providerId === 'superembed' || providerId === 'superembed_v2') {
-            return `${base}/?video_id=${tmdbId}&tmdb=1&s=${season}&e=${episode}`;
-        }
-        if (providerId === 'moviesapi' || providerId === 'moviesapi_alt') {
-            return `${base}/tv/${tmdbId}-${season}-${episode}`;
-        }
-        if (providerId === 'autoembed' || providerId === 'autoembed_alt') {
-            return `${base}/tv/${tmdbId}/${season}/${episode}`;
-        }
-        // Default structure
-        return `${base}/embed/tv/${tmdbId}/${season}/${episode}`;
     }
 }
 
@@ -182,25 +144,27 @@ function displaySourceButtons() {
             document.querySelectorAll('.source-btn').forEach(b => b.classList.remove('active'));
             btn.classList.add('active');
             
-            const url = getEmbedUrl(activeProvider, currentTMDBId, currentSeason, currentEpisode);
+            const url = getEmbedUrl(activeProvider, currentTMDBId, currentImdbId, currentSeason, currentEpisode);
             playStream(url);
         };
         SOURCE_LIST.appendChild(btn);
     });
     
-    const url = getEmbedUrl(activeProvider, currentTMDBId, currentSeason, currentEpisode);
+    const url = getEmbedUrl(activeProvider, currentTMDBId, currentImdbId, currentSeason, currentEpisode);
     playStream(url);
 }
 
-async function getShowDetails(tvId) {
-    const res = await fetch(`https://api.themoviedb.org/3/tv/${tvId}?api_key=${API_KEY}`);
+async function getShowDetails(tmdbId, type) {
+    // Fetch details AND external_ids (for IMDB ID)
+    const res = await fetch(`https://api.themoviedb.org/3/${type}/${tmdbId}?api_key=${API_KEY}&append_to_response=external_ids`);
     return await res.json();
 }
 
 async function renderEpisodeSelector(show) {
-    const details = await getShowDetails(show.id);
+    const details = await getShowDetails(show.id, 'tv');
     currentShow = show;
     currentTMDBId = show.id;
+    currentImdbId = details.external_ids?.imdb_id || null;
     currentSeason = 1;
     currentEpisode = 1;
     
@@ -254,7 +218,7 @@ function selectEpisode(episodeNum) {
         if (btn.textContent.startsWith(`E${episodeNum}:`)) btn.classList.add('active');
     });
     
-    const url = getEmbedUrl(activeProvider, currentTMDBId, currentSeason, currentEpisode);
+    const url = getEmbedUrl(activeProvider, currentTMDBId, currentImdbId, currentSeason, currentEpisode);
     playStream(url);
 }
 
@@ -264,6 +228,10 @@ async function openModal(item, type) {
     currentSeason = 1;
     currentEpisode = 1;
     activeProvider = 'vidrock';
+    
+    // Fetch IMDB ID for providers that need it
+    const details = await getShowDetails(item.id, type);
+    currentImdbId = details.external_ids?.imdb_id || null;
     
     const title = type === 'movie' ? item.title : item.name;
     
