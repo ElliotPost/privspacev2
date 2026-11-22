@@ -9,12 +9,15 @@ const SOURCE_LIST = document.getElementById('source-list');
 const EPISODE_SELECTOR = document.getElementById('episode-selector');
 const SEASON_TABS = document.getElementById('season-tabs');
 const EPISODE_LIST = document.getElementById('episode-list');
+const LIMIT_WARNING = document.getElementById('limit-warning');
 
+const DB_KEY = 'privspace_users';
+let currentUser = null;
 let currentShow = null;
 let currentSeason = 1;
 let currentEpisode = 1;
 let currentTMDBId = null;
-let currentImdbId = null; // Added for providers that require it
+let currentImdbId = null;
 let currentType = 'movie';
 let activeProvider = 'vidrock';
 
@@ -31,6 +34,148 @@ const PROVIDERS = [
     { name: 'VidSrc (Fallback)', id: 'vidsrc_to', base: 'https://vidsrc.to' }
 ];
 
+// --- AUTH & DB MANAGEMENT ---
+function initDB() {
+    let users = JSON.parse(localStorage.getItem(DB_KEY)) || {};
+    if (!users['Kris']) {
+        users['Kris'] = { password: 'Krismas', role: 'owner', limits: null };
+        localStorage.setItem(DB_KEY, JSON.stringify(users));
+    }
+    return users;
+}
+
+function getUser(username) {
+    const users = JSON.parse(localStorage.getItem(DB_KEY)) || {};
+    return users[username] || null;
+}
+
+function resetLimitsIfNeeded(user) {
+    if (user.role === 'owner' || user.role === 'premium') return user;
+    
+    const now = Date.now();
+    const oneDay = 24 * 60 * 60 * 1000;
+    if (!user.limits || (now - user.limits.lastReset > oneDay)) {
+        user.limits = { moviesWatched: 0, episodesWatched: 0, lastReset: now };
+        saveUser(user);
+    }
+    return user;
+}
+
+function saveUser(user) {
+    const users = JSON.parse(localStorage.getItem(DB_KEY)) || {};
+    users[user.username] = user;
+    localStorage.setItem(DB_KEY, JSON.stringify(users));
+}
+
+function checkLimit(type) {
+    if (currentUser.role === 'owner' || currentUser.role === 'premium') return { allowed: true, msg: '' };
+    
+    resetLimitsIfNeeded(currentUser);
+    if (type === 'movie' && currentUser.limits.moviesWatched >= 4) {
+        return { allowed: false, msg: 'Freemium limit reached: 4 movies per day.' };
+    }
+    if (type === 'episode' && currentUser.limits.episodesWatched >= 20) {
+        return { allowed: false, msg: 'Freemium limit reached: 20 episodes per day.' };
+    }
+    return { allowed: true, msg: '' };
+}
+
+function incrementLimit(type) {
+    if (currentUser.role === 'owner' || currentUser.role === 'premium') return;
+    resetLimitsIfNeeded(currentUser);
+    if (type === 'movie') currentUser.limits.moviesWatched++;
+    else currentUser.limits.episodesWatched++;
+    saveUser(currentUser);
+}
+
+// --- UI HANDLERS ---
+document.getElementById('login-form').addEventListener('submit', (e) => {
+    e.preventDefault();
+    const username = document.getElementById('login-user').value.trim();
+    const password = document.getElementById('login-pass').value;
+    const user = getUser(username);
+    
+    if (user && user.password === password) {
+        currentUser = { ...user, username };
+        resetLimitsIfNeeded(currentUser);
+        document.getElementById('login-overlay').classList.add('hidden');
+        document.getElementById('current-user-display').textContent = username;
+        
+        if (currentUser.role === 'owner') {
+            document.getElementById('owner-btn').classList.remove('hidden');
+        }
+        searchTMDB('avengers', 'movie');
+    } else {
+        document.getElementById('login-error').textContent = 'Invalid username or password.';
+    }
+});
+
+document.getElementById('logout-btn').addEventListener('click', () => {
+    currentUser = null;
+    document.getElementById('login-overlay').classList.remove('hidden');
+    document.getElementById('owner-btn').classList.add('hidden');
+    document.getElementById('login-user').value = '';
+    document.getElementById('login-pass').value = '';
+    document.getElementById('login-error').textContent = '';
+    GRID.innerHTML = '';
+});
+
+document.getElementById('owner-btn').addEventListener('click', () => {
+    document.getElementById('owner-modal').classList.remove('hidden');
+    renderUserList();
+});
+
+document.getElementById('close-owner').addEventListener('click', () => {
+    document.getElementById('owner-modal').classList.add('hidden');
+    document.getElementById('owner-message').textContent = '';
+});
+
+document.getElementById('create-user-form').addEventListener('submit', (e) => {
+    e.preventDefault();
+    const username = document.getElementById('new-username').value.trim();
+    const password = document.getElementById('new-password').value;
+    const role = document.getElementById('new-role').value;
+    
+    if (getUser(username)) {
+        document.getElementById('owner-message').textContent = 'Username already exists.';
+        document.getElementById('owner-message').style.color = '#ff4444';
+        return;
+    }
+    
+    const newUser = { 
+        password, 
+        role, 
+        limits: role === 'freemium' ? { moviesWatched: 0, episodesWatched: 0, lastReset: Date.now() } : null 
+    };
+    
+    const users = JSON.parse(localStorage.getItem(DB_KEY)) || {};
+    users[username] = newUser;
+    localStorage.setItem(DB_KEY, JSON.stringify(users));
+    
+    document.getElementById('owner-message').textContent = `User '${username}' created successfully.`;
+    document.getElementById('owner-message').style.color = '#44ff44';
+    document.getElementById('create-user-form').reset();
+    renderUserList();
+});
+
+function renderUserList() {
+    const users = JSON.parse(localStorage.getItem(DB_KEY)) || {};
+    const list = document.getElementById('user-list');
+    list.innerHTML = '';
+    
+    Object.keys(users).forEach(username => {
+        if (username === 'Kris') return;
+        const user = users[username];
+        const li = document.createElement('li');
+        li.innerHTML = `
+            <span>${username}</span>
+            <span class="role-badge role-${user.role}">${user.role}</span>
+        `;
+        list.appendChild(li);
+    });
+}
+
+// --- APP LOGIC ---
 window.addEventListener('scroll', () => {
     const navbar = document.querySelector('.navbar');
     if (window.scrollY > 50) navbar.classList.add('scrolled');
@@ -60,8 +205,10 @@ function renderGrid(items, type) {
         card.className = 'card';
         card.innerHTML = `
             <img src="https://image.tmdb.org/t/p/w500${item.poster_path}" alt="${title}">
-            <h3>${title}</h3>
-            <div class="year">${year}</div>
+            <div class="card-info">
+                <h3>${title}</h3>
+                <div class="year">${year}</div>
+            </div>
         `;
         card.onclick = () => openModal(item, type);
         GRID.appendChild(card);
@@ -72,7 +219,6 @@ function getEmbedUrl(providerId, tmdbId, imdbId, season, episode) {
     const provider = PROVIDERS.find(p => p.id === providerId) || PROVIDERS[0];
     const base = provider.base;
     const idToUse = providerId === 'primesrc' ? (imdbId || tmdbId) : tmdbId;
-    const idParam = providerId === 'primesrc' ? 'imdb' : 'tmdb'; // primesrc uses ?imdb=, others might use path
 
     if (currentType === 'movie') {
         switch(providerId) {
@@ -89,7 +235,6 @@ function getEmbedUrl(providerId, tmdbId, imdbId, season, episode) {
             default: return `${base}/movie/${tmdbId}`;
         }
     } else {
-        // TV Shows (Adapted to match the movie patterns)
         switch(providerId) {
             case 'vidrock': return `${base}/embed/tv/${tmdbId}/${season}/${episode}`;
             case 'vidlink': return `${base}/tv/${tmdbId}/${season}/${episode}`;
@@ -106,7 +251,17 @@ function getEmbedUrl(providerId, tmdbId, imdbId, season, episode) {
     }
 }
 
-function playStream(url) {
+function playStream(url, type) {
+    const limitCheck = checkLimit(type);
+    if (!limitCheck.allowed) {
+        LIMIT_WARNING.textContent = limitCheck.msg;
+        LIMIT_WARNING.classList.remove('hidden');
+        return;
+    }
+    
+    LIMIT_WARNING.classList.add('hidden');
+    incrementLimit(type);
+    
     LOADING.classList.remove('hidden');
     ERROR_MSG.classList.add('hidden');
     OUTPUT.innerHTML = '';
@@ -121,41 +276,34 @@ function playStream(url) {
         ERROR_MSG.classList.remove('hidden');
     };
 
-    setTimeout(() => {
-        LOADING.classList.add('hidden');
-    }, 4000);
-    
+    setTimeout(() => LOADING.classList.add('hidden'), 4000);
     OUTPUT.appendChild(iframe);
 }
 
 function displaySourceButtons() {
     SOURCE_LIST.innerHTML = '';
-    
     PROVIDERS.forEach((provider) => {
         const btn = document.createElement('button');
         btn.className = 'source-btn';
         btn.innerText = provider.name;
         btn.dataset.id = provider.id;
-        
         if (provider.id === activeProvider) btn.classList.add('active');
         
         btn.onclick = () => {
             activeProvider = provider.id;
             document.querySelectorAll('.source-btn').forEach(b => b.classList.remove('active'));
             btn.classList.add('active');
-            
             const url = getEmbedUrl(activeProvider, currentTMDBId, currentImdbId, currentSeason, currentEpisode);
-            playStream(url);
+            playStream(url, currentType === 'movie' ? 'movie' : 'episode');
         };
         SOURCE_LIST.appendChild(btn);
     });
     
     const url = getEmbedUrl(activeProvider, currentTMDBId, currentImdbId, currentSeason, currentEpisode);
-    playStream(url);
+    playStream(url, currentType === 'movie' ? 'movie' : 'episode');
 }
 
 async function getShowDetails(tmdbId, type) {
-    // Fetch details AND external_ids (for IMDB ID)
     const res = await fetch(`https://api.themoviedb.org/3/${type}/${tmdbId}?api_key=${API_KEY}&append_to_response=external_ids`);
     return await res.json();
 }
@@ -171,14 +319,12 @@ async function renderEpisodeSelector(show) {
     SEASON_TABS.innerHTML = '';
     details.seasons.forEach(season => {
         if (season.season_number === 0) return;
-        
         const tab = document.createElement('button');
         tab.className = 'season-tab' + (season.season_number === 1 ? ' active' : '');
         tab.textContent = `Season ${season.season_number}`;
         tab.onclick = () => selectSeason(season.season_number, details.seasons);
         SEASON_TABS.appendChild(tab);
     });
-    
     selectSeason(1, details.seasons);
     EPISODE_SELECTOR.classList.remove('hidden');
 }
@@ -186,7 +332,6 @@ async function renderEpisodeSelector(show) {
 async function selectSeason(seasonNum, seasons) {
     currentSeason = seasonNum;
     currentEpisode = 1;
-    
     document.querySelectorAll('.season-tab').forEach(tab => {
         tab.classList.remove('active');
         if (tab.textContent === `Season ${seasonNum}`) tab.classList.add('active');
@@ -206,20 +351,17 @@ async function selectSeason(seasonNum, seasons) {
         btn.onclick = () => selectEpisode(ep.episode_number);
         EPISODE_LIST.appendChild(btn);
     });
-    
     selectEpisode(1);
 }
 
 function selectEpisode(episodeNum) {
     currentEpisode = episodeNum;
-    
     document.querySelectorAll('.episode-btn').forEach(btn => {
         btn.classList.remove('active');
         if (btn.textContent.startsWith(`E${episodeNum}:`)) btn.classList.add('active');
     });
-    
     const url = getEmbedUrl(activeProvider, currentTMDBId, currentImdbId, currentSeason, currentEpisode);
-    playStream(url);
+    playStream(url, 'episode');
 }
 
 async function openModal(item, type) {
@@ -229,12 +371,10 @@ async function openModal(item, type) {
     currentEpisode = 1;
     activeProvider = 'vidrock';
     
-    // Fetch IMDB ID for providers that need it
     const details = await getShowDetails(item.id, type);
     currentImdbId = details.external_ids?.imdb_id || null;
     
     const title = type === 'movie' ? item.title : item.name;
-    
     document.getElementById('m-title').innerText = title;
     document.getElementById('m-plot').innerText = item.overview;
     document.getElementById('m-poster').src = `https://image.tmdb.org/t/p/w500${item.poster_path}`;
@@ -243,6 +383,7 @@ async function openModal(item, type) {
     OUTPUT.innerHTML = '';
     LOADING.classList.remove('hidden');
     ERROR_MSG.classList.add('hidden');
+    LIMIT_WARNING.classList.add('hidden');
     EPISODE_SELECTOR.classList.add('hidden');
     
     if (type === 'movie') {
@@ -251,7 +392,6 @@ async function openModal(item, type) {
         await renderEpisodeSelector(item);
         displaySourceButtons();
     }
-    
     MODAL.classList.remove('hidden');
 }
 
@@ -264,8 +404,7 @@ document.querySelectorAll('.nav-btn').forEach(btn => {
     btn.onclick = () => {
         document.querySelectorAll('.nav-btn').forEach(b => b.classList.remove('active'));
         btn.classList.add('active');
-        const type = btn.dataset.type;
-        searchTMDB(SEARCH.value || 'avengers', type);
+        searchTMDB(SEARCH.value || 'avengers', btn.dataset.type);
     };
 });
 
@@ -276,4 +415,5 @@ SEARCH.addEventListener('keyup', (e) => {
     }
 });
 
-searchTMDB('avengers', 'movie');
+// Initialize
+initDB();
