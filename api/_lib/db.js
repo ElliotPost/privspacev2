@@ -1,26 +1,20 @@
-import mongoose from 'mongoose';
+import { Pool } from 'pg';
 
-let cached = globalThis._psMongo;
-if (!cached) cached = globalThis._psMongo = { conn: null, promise: null };
+// Aiven/Neon/Heroku usually require SSL. 
+// If your provider doesn't, remove the ssl object.
+const pool = new Pool({
+    connectionString: process.env.DATABASE_URL,
+    ssl: { rejectUnauthorized: false },
+    max: 10, // Connection pool size
+    idleTimeoutMillis: 30000,
+});
 
-export async function db() {
-    if (cached.conn) return cached.conn;
-
-    if (!cached.promise) {
-        cached.promise = mongoose.connect(process.env.MONGODB_URI, {
-            maxPoolSize: 5,
-            minPoolSize: 0,
-            serverSelectionTimeoutMS: 8000,
-            socketTimeoutMS: 20000,
-            bufferCommands: false
-        });
-    }
-
+export async function query(text, params) {
+    const client = await pool.connect();
     try {
-        cached.conn = await cached.promise;
-    } catch (err) {
-        cached.promise = null;
-        throw err;
+        const res = await client.query(text, params);
+        return res;
+    } finally {
+        client.release();
     }
-    return cached.conn;
 }
