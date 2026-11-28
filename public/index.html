@@ -11,7 +11,7 @@
 
 <div class="bg-glow"></div>
 
-<!-- AUTH & TOS WRAPPER -->
+<!-- AUTH LAYER -->
 <div id="auth-layer" class="layer">
     <!-- LOGIN -->
     <div id="login-card" class="card">
@@ -26,7 +26,7 @@
         <p id="l-error" class="error"></p>
     </div>
 
-    <!-- TOS & GUARDIAN CONSENT (HIDDEN BY DEFAULT) -->
+    <!-- TOS -->
     <div id="tos-card" class="card hidden">
         <h2 class="glow-text">Terms of Service & Privacy</h2>
         <div class="tos-scroll">
@@ -54,7 +54,7 @@
         <p id="tos-error" class="error"></p>
     </div>
 
-    <!-- INSTRUCTIONS (HIDDEN BY DEFAULT) -->
+    <!-- INSTRUCTIONS -->
     <div id="instructions-card" class="card hidden">
         <h2 class="glow-text">Welcome to Nexa</h2>
         <ul class="instructions">
@@ -68,9 +68,9 @@
     </div>
 </div>
 
-<!-- MAIN APP (HIDDEN UNTIL LOGIN) -->
+<!-- MAIN APP -->
 <div id="app" class="layer hidden">
-    <nav class="glass-nav">
+    <nav id="nav" class="glass-nav">
         <div class="nav-left">
             <span class="nav-logo glow-text">NEXA</span>
             <div class="nav-links">
@@ -88,13 +88,33 @@
     </nav>
 
     <main class="container">
+        <!-- HERO -->
+        <section id="hero" class="hero hidden">
+            <div class="hero-bg">
+                <img id="hero-img" src="" alt="">
+            </div>
+            <div class="hero-content">
+                <h2 id="hero-title"></h2>
+                <p id="hero-plot"></p>
+                <button id="hero-play" class="btn-primary">▶ Watch Now</button>
+            </div>
+        </section>
+
+        <!-- CONTINUE WATCHING -->
         <section id="continue-section" class="hidden">
             <h3 class="section-title">Continue Watching</h3>
-            <div id="continue-row" class="row-scroll"></div>
+            <div id="continue-row" class="rail"></div>
         </section>
+
+        <!-- CONTENT ROWS -->
         <section id="content-section">
-            <h3 class="section-title" id="content-title">Trending Movies</h3>
-            <div id="content-grid" class="grid"></div>
+            <div id="content-grid"></div>
+        </section>
+
+        <!-- SEARCH RESULTS -->
+        <section id="results-sec" class="hidden">
+            <h3 class="section-title">Search Results</h3>
+            <div id="results" class="grid"></div>
         </section>
     </main>
 </div>
@@ -113,6 +133,13 @@
             <span class="src-label">Sources:</span>
             <div id="p-sources" class="chips"></div>
         </div>
+        
+        <!-- EPISODE SELECTOR -->
+        <div id="ep-sec" class="hidden">
+            <h4>Episodes</h4>
+            <div id="season-tabs" class="chips"></div>
+            <div id="ep-list" class="ep-grid"></div>
+        </div>
     </div>
 </div>
 
@@ -120,37 +147,53 @@
 <div id="owner-modal" class="modal hidden">
     <div class="modal-content glass wide">
         <button id="close-owner" class="close-x">&times;</button>
-        <h2 class="glow-text">Owner Command Center</h2>
+        <div class="owner-header">
+            <h2 class="glow-text">⚡ Command Center</h2>
+            <div class="owner-stats">
+                <div class="stat-box">
+                    <span id="stat-users" class="stat-num">0</span>
+                    <span class="stat-label">Users</span>
+                </div>
+                <div class="stat-box">
+                    <span id="stat-minors" class="stat-num">0</span>
+                    <span class="stat-label">Minors</span>
+                </div>
+                <div class="stat-box">
+                    <span id="stat-banned" class="stat-num">0</span>
+                    <span class="stat-label">Banned</span>
+                </div>
+            </div>
+        </div>
         
         <div class="tabs">
-            <button class="tab-btn active" data-tab="users">Users</button>
-            <button class="tab-btn" data-tab="health">System Health</button>
-            <button class="tab-btn" data-tab="logs">Audit Logs</button>
+            <button class="tab-btn active" data-tab="users">👥 Users</button>
+            <button class="tab-btn" data-tab="health">🖥️ Health</button>
+            <button class="tab-btn" data-tab="logs">📋 Logs</button>
         </div>
 
         <!-- USERS TAB -->
         <div id="tab-users" class="tab-content">
-            <div class="admin-form">
+            <div class="admin-form glass-inner">
                 <input type="text" id="new-user" placeholder="Username">
                 <input type="text" id="new-pass" placeholder="Password">
                 <select id="new-role">
                     <option value="freemium">Freemium</option>
                     <option value="premium">Premium</option>
                 </select>
-                <button id="btn-create-user" class="btn-primary">Create User</button>
+                <button id="btn-create-user" class="btn-primary">+ Create</button>
             </div>
-            <div id="user-list" class="list"></div>
+            <div id="user-list" class="user-grid"></div>
         </div>
 
         <!-- HEALTH TAB -->
         <div id="tab-health" class="tab-content hidden">
             <div id="health-stats" class="stats-grid"></div>
-            <div id="provider-status" class="list"></div>
+            <div id="provider-status" class="provider-list"></div>
         </div>
 
         <!-- LOGS TAB -->
         <div id="tab-logs" class="tab-content hidden">
-            <div id="audit-list" class="list logs"></div>
+            <div id="audit-list" class="audit-log"></div>
         </div>
     </div>
 </div>
