@@ -1,38 +1,54 @@
+import { query } from './_lib/db.js';
 import { requireUser } from './_lib/auth.js';
+
+const LIMITS = { freemium: { movies: 4, episodes: 20 }, premium: { movies: Infinity, episodes: Infinity } };
 
 export default async function handler(req, res) {
     const user = await requireUser(req, res);
     if (!user) return;
 
     if (req.method === 'GET') {
-        const sorted = [...user.history].sort((a, b) => b.updatedAt - a.updatedAt);
-        return res.json(sorted.slice(0, 12));
+        const result = await query(
+            'SELECT * FROM watch_history WHERE user_id = $1 ORDER BY updated_at DESC LIMIT 20',
+            [user.id]
+        );
+        return res.json(result.rows);
     }
 
     if (req.method === 'POST') {
-        const { tmdbId, type, title, poster, season, episode, provider } = req.body || {};
-        if (!tmdbId || !type) return res.status(400).json({ error: 'missing_fields' });
+        const { tmdb_id, type, title, poster_path, season, episode, progress_seconds, duration_seconds, provider, action } = req.body;
 
-        const idx = user.history.findIndex(h => h.tmdbId === tmdbId && h.type === type);
-        const entry = { tmdbId, type, title, poster, season, episode, provider, updatedAt: new Date() };
+        // QUOTA LOGIC
+        if (action === 'play') {
+            const limits = LIMITS[user.role] || LIMITS.freemium;
+            
+            if (type === 'movie' && user.quota_movies >= limits.movies) {
+                return res.status(403).json({ error: 'quota_reached_movies' });
+            }
+            if (type === 'tv' && user.quota_episodes >= limits.episodes) {
+                return res.status(403).json({ error: 'quota_reached_episodes' });
+            }
 
-        if (idx >= 0) user.history[idx] = { ...user.history[idx].toObject(), ...entry };
-        else user.history.unshift(entry);
+            // Increment quota
+            const quotaField = type === 'movie' ? 'quota_movies' : 'quota_episodes';
+            await query(`UPDATE users SET ${quotaField} = ${quotaField} + 1 WHERE id = $1`, [user.id]);
+        }
 
-        user.history = user.history
-            .sort((a, b) => b.updatedAt - a.updatedAt)
-            .slice(0, 24);
+        // UPSERT WATCH PROGRESS
+        await query(
+            `INSERT INTO watch_history (user_id, tmdb_id, type, title, poster_path, season, episode, progress_seconds, duration_seconds, provider, updated_at)
+             VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, NOW())
+             ON CONFLICT (user_id, tmdb_id, type, season, episode) 
+             DO UPDATE SET 
+                progress_seconds = EXCLUDED.progress_seconds,
+                duration_seconds = EXCLUDED.duration_seconds,
+                provider = EXCLUDED.provider,
+                updated_at = NOW()`,
+            [user.id, tmdb_id, type, title, poster_path, season, episode, progress_seconds, duration_seconds, provider]
+        );
 
-        await user.save();
-        return res.json({ ok: true });
+        return res.json({ success: true, new_quota: type === 'movie' ? user.quota_movies + 1 : user.quota_episodes + 1 });
     }
 
-    if (req.method === 'DELETE') {
-        const { tmdbId, type } = req.body || {};
-        user.history = user.history.filter(h => !(h.tmdbId === tmdbId && h.type === type));
-        await user.save();
-        return res.json({ ok: true });
-    }
-
-    res.status(405).json({ error: 'method' });
+    res.status(405).json({ error: 'method_not_allowed' });
 }
