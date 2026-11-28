@@ -2,20 +2,20 @@ const API = '/api';
 const $ = id => document.getElementById(id);
 
 const PROVIDERS = [
-    { id: 'vidrock',  name: 'VidRock',  base: 'https://vidrock.to' },
-    { id: 'vidlink',  name: 'VidLink',  base: 'https://vidlink.pro' },
-    { id: 'vidfast',  name: 'VidFast',  base: 'https://vidfast.vc' },
-    { id: 'vidcore',  name: 'VidCore',  base: 'https://vidcore.io' },
-    { id: 'vidbolt',  name: 'VidBolt',  base: 'https://vidbolt.pro' },
-    { id: 'fmov',     name: 'Fmov',     base: 'https://fmov.my' },
+    { id: 'vidrock', name: 'VidRock', base: 'https://vidrock.to' },
+    { id: 'vidlink', name: 'VidLink', base: 'https://vidlink.pro' },
+    { id: 'vidfast', name: 'VidFast', base: 'https://vidfast.vc' },
+    { id: 'vidcore', name: 'VidCore', base: 'https://vidcore.io' },
+    { id: 'vidbolt', name: 'VidBolt', base: 'https://vidbolt.pro' },
+    { id: 'fmov', name: 'Fmov', base: 'https://fmov.my' },
     { id: 'primesrc', name: 'PrimeSRC', base: 'https://primesrc.me' },
     { id: 'atlantic', name: 'Atlantic', base: 'https://atlantic.st' },
-    { id: '0vidads',  name: '0vidads',  base: 'https://0vidads.top' }
+    { id: '0vidads', name: '0vidads', base: 'https://0vidads.top' }
 ];
 
 const ROWS = {
     movie: [
-        { title: 'Trending Now', path: 'trending/movie/week' },
+        { title: 'Trending Movies', path: 'trending/movie/week' },
         { title: 'Adrenaline', path: 'discover/movie', q: { with_genres: 28 } },
         { title: 'Magic & Myth', path: 'discover/movie', q: { with_genres: 14 } },
         { title: 'Laugh Track', path: 'discover/movie', q: { with_genres: 35 } },
@@ -25,7 +25,7 @@ const ROWS = {
         { title: 'Slow Burn', path: 'discover/movie', q: { with_genres: '18,10749' } }
     ],
     tv: [
-        { title: 'Binge-Worthy', path: 'trending/tv/week' },
+        { title: 'Trending Series', path: 'trending/tv/week' },
         { title: 'Action & Adventure', path: 'discover/tv', q: { with_genres: 10759 } },
         { title: 'Otherworldly', path: 'discover/tv', q: { with_genres: 10765 } },
         { title: 'Sitcom Comfort', path: 'discover/tv', q: { with_genres: 35 } },
@@ -40,7 +40,6 @@ const IMG = (p, size = 'w500') => p ? `https://image.tmdb.org/t/p/${size}${p}` :
 let token = localStorage.getItem('nexa_token');
 let me = null;
 let mode = 'movie';
-let currentLang = 'en';
 let ctx = { id: null, imdb: null, type: 'movie', season: 1, episode: 1, title: '', poster: '', provider: 'vidrock', claimed: null };
 
 /* ---------- TRANSPORT ---------- */
@@ -60,7 +59,7 @@ async function apiCall(path, opts = {}) {
 }
 
 async function tmdb(path, params = {}) {
-    const qs = new URLSearchParams({ path, language: currentLang === 'hi' ? 'hi-IN' : 'en-US', ...params });
+    const qs = new URLSearchParams({ path, language: 'en-US', ...params });
     const res = await fetch(`${API}/tmdb?${qs}`);
     return res.json();
 }
@@ -68,13 +67,13 @@ async function tmdb(path, params = {}) {
 /* ---------- AUTH FLOW ---------- */
 $('login-form').addEventListener('submit', async e => {
     e.preventDefault();
-    $('login-error').textContent = '';
+    $('l-error').textContent = '';
     try {
         const data = await apiCall('/login', {
             method: 'POST',
             body: JSON.stringify({
-                username: $('login-user').value.trim(),
-                password: $('login-pass').value
+                username: $('l-user').value.trim(),
+                password: $('l-pass').value
             })
         });
         token = data.token;
@@ -82,13 +81,13 @@ $('login-form').addEventListener('submit', async e => {
         me = data.user;
         
         if (me.needs_tos) {
-            $('login').classList.add('hidden');
+            $('login-card').classList.add('hidden');
             $('tos-card').classList.remove('hidden');
         } else {
-            await boot();
+            showInstructions();
         }
     } catch (err) {
-        $('login-error').textContent = err.data?.error === 'account_banned' 
+        $('l-error').textContent = err.data?.error === 'account_banned' 
             ? 'Account suspended.' 
             : 'Wrong username or password.';
     }
@@ -117,36 +116,47 @@ $('btn-accept-tos').addEventListener('click', async () => {
             method: 'POST',
             body: JSON.stringify({ accepted_tos: true, is_minor: isMinor, guardian_name: guardianName })
         });
-        await boot();
+        showInstructions();
     } catch (err) {
         $('tos-error').textContent = 'Failed to save consent.';
     }
 });
+
+$('btn-close-instructions').addEventListener('click', enterApp);
+
+function showInstructions() {
+    $('login-card').classList.add('hidden');
+    $('tos-card').classList.add('hidden');
+    $('instructions-card').classList.remove('hidden');
+}
+
+function enterApp() {
+    $('instructions-card').classList.add('hidden');
+    $('auth-layer').classList.add('hidden');
+    $('app').classList.remove('hidden');
+    $('user-display').textContent = me.username;
+    $('owner-btn').classList.toggle('hidden', me.role !== 'owner');
+    paintQuota();
+    loadHome();
+}
 
 function signOut() {
     token = null;
     me = null;
     localStorage.removeItem('nexa_token');
     $('app').classList.add('hidden');
-    $('login').classList.remove('hidden');
-    $('login-pass').value = '';
+    $('auth-layer').classList.remove('hidden');
+    $('login-card').classList.remove('hidden');
+    $('tos-card').classList.add('hidden');
+    $('instructions-card').classList.add('hidden');
+    $('l-pass').value = '';
     closeDetail();
 }
 $('logout-btn').onclick = signOut;
 
-async function boot() {
-    $('login').classList.add('hidden');
-    $('tos-card').classList.add('hidden');
-    $('app').classList.remove('hidden');
-    $('user-display').textContent = me.username;
-    $('owner-btn').classList.toggle('hidden', me.role !== 'owner');
-    paintQuota();
-    await loadHome();
-}
-
 function paintQuota() {
     const pill = $('quota-pill');
-    if (me.role !== 'freemium') { pill.classList.add('hidden'); return; }
+    if (!me || me.role !== 'freemium') { pill.classList.add('hidden'); return; }
     pill.classList.remove('hidden');
     pill.textContent = `${me.quota_movies}/4 · ${me.quota_episodes}/20`;
 }
@@ -195,7 +205,7 @@ async function loadRows() {
     for (const cfg of ROWS[mode]) {
         const data = await tmdb(cfg.path, { 
             sort_by: 'popularity.desc', 
-            with_original_language: currentLang === 'hi' ? 'hi' : 'en',
+            with_original_language: 'en',
             ...cfg.q 
         });
         const items = (data.results || []).filter(r => r.poster_path).slice(0, 14);
@@ -236,7 +246,7 @@ $('search').addEventListener('input', e => {
         const data = await tmdb(`search/${mode}`, { query: q });
         $('hero').classList.add('hidden');
         $('continue-section').classList.add('hidden');
-        $('content-grid').innerHTML = '';
+        $('content-section').classList.add('hidden');
         $('results-sec').classList.remove('hidden');
         const grid = $('results');
         grid.innerHTML = '';
@@ -255,16 +265,6 @@ document.querySelectorAll('.nav-btn').forEach(btn => {
     };
 });
 
-/* ---------- LANGUAGE SWITCHER ---------- */
-document.querySelectorAll('.lang-btn').forEach(btn => {
-    btn.onclick = () => {
-        document.querySelectorAll('.lang-btn').forEach(b => b.classList.remove('active'));
-        btn.classList.add('active');
-        currentLang = btn.dataset.lang;
-        loadHome();
-    };
-});
-
 /* ---------- PROVIDER URLS ---------- */
 function embedUrl(pid, { id, imdb, type, season, episode }) {
     const p = PROVIDERS.find(x => x.id === pid) || PROVIDERS[0];
@@ -279,7 +279,7 @@ function embedUrl(pid, { id, imdb, type, season, episode }) {
             case 'fmov':
             case 'atlantic': return `${b}/embed/movie/${id}`;
             case 'primesrc': return `${b}/embed/movie?imdb=${imdb || id}`;
-            case '0vidads': return `${b}/embed/movie/${id}?nextEpisode=true&autoplayNextEpisode=true&episodeSelector=true&overlay=true&color=8B5CF6&branding=0vidads&subtitle=${currentLang === 'hi' ? 'hindi' : 'english'}&server=valstrax`;
+            case '0vidads': return `${b}/embed/movie/${id}?nextEpisode=true&autoplayNextEpisode=true&episodeSelector=true&overlay=true&color=8B5CF6&branding=0vidads&subtitle=english&server=valstrax`;
         }
     } else {
         switch (pid) {
@@ -291,7 +291,7 @@ function embedUrl(pid, { id, imdb, type, season, episode }) {
             case 'fmov':
             case 'atlantic': return `${b}/embed/tv/${id}/${season}/${episode}`;
             case 'primesrc': return `${b}/embed/tv?imdb=${imdb || id}&season=${season}&episode=${episode}`;
-            case '0vidads': return `${b}/embed/tv/${id}/${season}/${episode}?nextEpisode=true&autoplayNextEpisode=true&episodeSelector=true&overlay=true&color=8B5CF6&branding=0vidads&subtitle=${currentLang === 'hi' ? 'hindi' : 'english'}&server=valstrax`;
+            case '0vidads': return `${b}/embed/tv/${id}/${season}/${episode}?nextEpisode=true&autoplayNextEpisode=true&episodeSelector=true&overlay=true&color=8B5CF6&branding=0vidads&subtitle=english&server=valstrax`;
         }
     }
     return `${b}/movie/${id}`;
@@ -313,10 +313,9 @@ async function openDetail(item, type, seed = {}) {
         claimed: null
     };
 
-    $('d-title').textContent = ctx.title;
-    $('d-plot').textContent = details.overview || 'No synopsis available.';
-    $('d-poster').src = IMG(details.poster_path);
-
+    $('p-title').textContent = ctx.title;
+    $('p-meta').innerHTML = ''; // Clear previous meta tags
+    
     const facts = [];
     const yr = (details.release_date || details.first_air_date || '').slice(0, 4);
     if (yr) facts.push(yr);
@@ -324,11 +323,17 @@ async function openDetail(item, type, seed = {}) {
     if (type === 'movie' && details.runtime) facts.push(`${details.runtime} min`);
     if (type === 'tv' && details.number_of_seasons) facts.push(`${details.number_of_seasons} seasons`);
     (details.genres || []).slice(0, 3).forEach(g => facts.push(g.name));
-    $('d-facts').innerHTML = facts.map(f => `<span>${esc(f)}</span>`).join('');
+    facts.forEach(f => {
+        const span = document.createElement('span');
+        span.textContent = f;
+        span.style.marginRight = '10px';
+        span.style.color = 'var(--dim)';
+        span.style.fontSize = '0.9rem';
+        $('p-meta').appendChild(span);
+    });
 
-    $('d-warn').classList.add('hidden');
-    $('frame-host').innerHTML = '';
-    $('stage-load').classList.remove('hidden');
+    $('frame-host') && ($('frame-host').innerHTML = ''); // Clear iframe if host exists
+    $('p-loading').classList.remove('hidden');
     $('ep-sec').classList.add('hidden');
     $('player-modal').classList.remove('hidden');
     document.body.style.overflow = 'hidden';
@@ -396,16 +401,14 @@ async function play() {
                 body: JSON.stringify({ kind, tmdbId: ctx.id, season: ctx.season, episode: ctx.episode })
             });
             ctx.claimed = key;
-            $('d-warn').classList.add('hidden');
             // Refresh user data for quota display
             const freshMe = await apiCall('/me');
             me = { ...me, ...freshMe };
             paintQuota();
         } catch (err) {
-            $('stage-load').classList.add('hidden');
-            $('frame-host').innerHTML = '';
-            $('d-warn').textContent = err.data?.message || 'Playback blocked.';
-            $('d-warn').classList.remove('hidden');
+            $('p-loading').classList.add('hidden');
+            $('p-iframe').src = '';
+            alert(err.data?.message || 'Playback blocked by quota limits.');
             return;
         }
     }
@@ -424,19 +427,23 @@ async function play() {
 }
 
 function mountFrame() {
-    $('stage-load').classList.remove('hidden');
-    const host = $('frame-host');
-    host.innerHTML = '';
-
-    const f = document.createElement('iframe');
-    f.src = embedUrl(ctx.provider, ctx);
-    f.allowFullscreen = true;
-    f.allow = 'encrypted-media; autoplay; fullscreen; clipboard-write';
-    f.referrerPolicy = 'origin';
-    f.onload = () => $('stage-load').classList.add('hidden');
-    host.appendChild(f);
-
-    setTimeout(() => $('stage-load').classList.add('hidden'), 4500);
+    $('p-loading').classList.remove('hidden');
+    const iframe = $('p-iframe');
+    iframe.src = ''; // Clear previous
+    
+    const provider = PROVIDERS.find(p => p.id === ctx.provider);
+    let url = '';
+    
+    if (ctx.type === 'movie') {
+        url = `${provider.base}/embed/movie/${ctx.id}`;
+        if (ctx.provider === 'vidfast' || ctx.provider === 'vidcore') url += '?autoPlay=true';
+    } else {
+        url = `${provider.base}/embed/tv/${ctx.id}/${ctx.season}/${ctx.episode}`;
+    }
+    
+    iframe.src = url;
+    iframe.onload = () => $('p-loading').classList.add('hidden');
+    setTimeout(() => $('p-loading').classList.add('hidden'), 4500);
 }
 
 async function resume(h) {
@@ -446,7 +453,7 @@ async function resume(h) {
 
 function closeDetail() {
     $('player-modal').classList.add('hidden');
-    $('frame-host').innerHTML = '';
+    $('p-iframe').src = '';
     document.body.style.overflow = '';
 }
 $('close-player').onclick = closeDetail;
@@ -492,7 +499,7 @@ async function loadDashboard() {
             <div>
                 <strong>${esc(u.username)}</strong> 
                 <span class="badge ${u.role}">${u.role}</span>
-                ${u.is_minor ? '<span style="font-size:0.7rem;color:#4fe08a;margin-left:5px;">[Minor]</span>' : ''}
+                ${u.is_minor ? '<span style="font-size:0.7rem;color:var(--success);margin-left:5px;">[Minor]</span>' : ''}
                 <div style="font-size:0.75rem;color:var(--dim)">Quota: ${u.quota_movies}/4M · ${u.quota_episodes}/20E</div>
             </div>
             <div class="action-btns">
@@ -538,6 +545,11 @@ addEventListener('keydown', e => {
 if (token) {
     apiCall('/me').then(userData => {
         me = userData;
-        boot();
+        $('auth-layer').classList.add('hidden');
+        $('app').classList.remove('hidden');
+        $('user-display').textContent = me.username;
+        $('owner-btn').classList.toggle('hidden', me.role !== 'owner');
+        paintQuota();
+        loadHome();
     }).catch(signOut);
-        }
+    }
