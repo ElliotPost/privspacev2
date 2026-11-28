@@ -3,126 +3,154 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>PrivSpace</title>
-<link rel="preconnect" href="https://fonts.googleapis.com">
-<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
+<title>Nexa</title>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;800&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="style.css">
 </head>
 <body>
 
-<div class="ambient"></div>
+<div class="bg-glow"></div>
 
-<div id="login" class="login-wrap">
-    <div class="login-card">
-        <div class="login-mark">PS</div>
-        <h1 class="wordmark">PRIVSPACE</h1>
-        <p class="muted">Private library. Sign in to continue.</p>
+<!-- AUTH & TOS WRAPPER -->
+<div id="auth-layer" class="layer">
+    <!-- LOGIN -->
+    <div id="login-card" class="card">
+        <div class="logo-icon">N</div>
+        <h1 class="glow-text">NEXA</h1>
+        <p class="sub">Premium Streaming Experience</p>
         <form id="login-form">
-            <input id="login-user" type="text" placeholder="Username" autocomplete="username" required>
-            <input id="login-pass" type="password" placeholder="Password" autocomplete="current-password" required>
-            <button class="btn-accent" type="submit">Sign In</button>
+            <input type="text" id="l-user" placeholder="Username" required>
+            <input type="password" id="l-pass" placeholder="Password" required>
+            <button type="submit" class="btn-primary">Enter Nexus</button>
         </form>
-        <p id="login-error" class="err"></p>
+        <p id="l-error" class="error"></p>
+    </div>
+
+    <!-- TOS & GUARDIAN CONSENT (HIDDEN BY DEFAULT) -->
+    <div id="tos-card" class="card hidden">
+        <h2 class="glow-text">Terms of Service & Privacy</h2>
+        <div class="tos-scroll">
+            <p><strong>1. Privacy First:</strong> Nexa does not sell your data. Your watch history is encrypted and stored solely to provide your "Continue Watching" experience.</p>
+            <p><strong>2. Content Disclaimer:</strong> Nexa is an interface. We do not host content. All streams are fetched from third-party APIs.</p>
+            <p><strong>3. Minor Safety (COPPA/GDPR-K):</strong> If you are under 13, a parent or legal guardian must consent to your use of this service. We do not use targeted advertising for minors.</p>
+            <p><strong>4. Fair Use:</strong> Freemium accounts are limited to 4 movies and 20 episodes per 24-hour cycle to preserve server bandwidth.</p>
+        </div>
+        
+        <div class="consent-checks">
+            <label class="checkbox-row">
+                <input type="checkbox" id="chk-tos" required>
+                <span>I have read and agree to the Terms & Privacy Policy.</span>
+            </label>
+            <label class="checkbox-row">
+                <input type="checkbox" id="chk-minor">
+                <span>I am under 13 years old.</span>
+            </label>
+            <div id="guardian-box" class="hidden">
+                <input type="text" id="g-name" placeholder="Parent / Guardian Full Name">
+            </div>
+        </div>
+        
+        <button id="btn-accept-tos" class="btn-primary">Accept & Continue</button>
+        <p id="tos-error" class="error"></p>
+    </div>
+
+    <!-- INSTRUCTIONS (HIDDEN BY DEFAULT) -->
+    <div id="instructions-card" class="card hidden">
+        <h2 class="glow-text">Welcome to Nexa</h2>
+        <ul class="instructions">
+            <li><span class="icon">🔍</span> Use the search bar to find movies and TV shows.</li>
+            <li><span class="icon">▶️</span> Click any card to open the player. If one source fails, use the source buttons below the player.</li>
+            <li><span class="icon">🕒</span> Your progress is saved automatically to "Continue Watching".</li>
+            <li><span class="icon">🛡️</span> Freemium users: Quotas reset every 24 hours.</li>
+            <li><span class="icon">👑</span> Owners: Access the Command Center via the top-right key icon.</li>
+        </ul>
+        <button id="btn-close-instructions" class="btn-primary">Start Watching</button>
     </div>
 </div>
 
-<div id="app" class="hidden">
-    <nav id="nav">
-        <div class="nav-l">
-            <span class="wordmark sm">PRIVSPACE</span>
-            <div class="tabs">
-                <button class="tab active" data-type="movie">Films</button>
-                <button class="tab" data-type="tv">Series</button>
+<!-- MAIN APP (HIDDEN UNTIL LOGIN) -->
+<div id="app" class="layer hidden">
+    <nav class="glass-nav">
+        <div class="nav-left">
+            <span class="nav-logo glow-text">NEXA</span>
+            <div class="nav-links">
+                <button class="nav-btn active" data-type="movie">Movies</button>
+                <button class="nav-btn" data-type="tv">Series</button>
             </div>
         </div>
-        <div class="nav-r">
-            <div class="search-shell">
-                <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="7"/><path d="M21 21l-4.3-4.3"/></svg>
-                <input id="search" type="text" placeholder="Search titles">
-            </div>
-            <span id="quota-pill" class="pill hidden"></span>
-            <button id="owner-btn" class="key-btn hidden" title="Owner console">
-                <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2"><circle cx="8" cy="15" r="4"/><path d="M10.8 12.2L20 3m-3 3l2.5 2.5M14.5 8.5L17 11"/></svg>
-            </button>
-            <div class="who">
-                <span id="who-name"></span>
-                <button id="logout" class="ghost">Exit</button>
-            </div>
+        <div class="nav-right">
+            <input type="text" id="search" placeholder="Search Nexa...">
+            <span id="quota-pill" class="pill hidden">0/4</span>
+            <button id="owner-btn" class="icon-btn hidden" title="Owner Command Center">👑</button>
+            <span id="user-display" class="user-tag">User</span>
+            <button id="logout-btn" class="btn-outline">Exit</button>
         </div>
     </nav>
 
-    <main>
-        <section id="hero" class="hero hidden">
-            <div class="hero-art"><img id="hero-img" alt=""></div>
-            <div class="hero-body">
-                <span class="hero-tag">Featured tonight</span>
-                <h2 id="hero-title"></h2>
-                <p id="hero-plot"></p>
-                <button id="hero-play" class="btn-accent wide">Play</button>
-            </div>
+    <main class="container">
+        <section id="continue-section" class="hidden">
+            <h3 class="section-title">Continue Watching</h3>
+            <div id="continue-row" class="row-scroll"></div>
         </section>
-
-        <section id="continue-sec" class="row-sec hidden">
-            <h3 class="row-title">Continue Watching</h3>
-            <div id="continue-row" class="rail"></div>
-        </section>
-
-        <div id="rows"></div>
-
-        <section id="results-sec" class="row-sec hidden">
-            <h3 class="row-title">Results</h3>
-            <div id="results" class="grid"></div>
+        <section id="content-section">
+            <h3 class="section-title" id="content-title">Trending Movies</h3>
+            <div id="content-grid" class="grid"></div>
         </section>
     </main>
 </div>
 
-<div id="detail" class="overlay hidden">
-    <div class="sheet">
-        <button id="detail-close" class="x">&times;</button>
-        <div class="sheet-head">
-            <img id="d-poster" alt="">
-            <div class="sheet-meta">
-                <h2 id="d-title"></h2>
-                <div id="d-facts" class="facts"></div>
-                <p id="d-plot"></p>
-                <div id="d-warn" class="warn hidden"></div>
-            </div>
+<!-- PLAYER MODAL -->
+<div id="player-modal" class="modal hidden">
+    <div class="modal-content glass">
+        <button id="close-player" class="close-x">&times;</button>
+        <h2 id="p-title"></h2>
+        <div id="p-meta" class="meta-tags"></div>
+        <div class="stage">
+            <iframe id="p-iframe" allowfullscreen allow="autoplay; encrypted-media"></iframe>
+            <div id="p-loading" class="loader"></div>
         </div>
-        <div id="ep-sec" class="ep-sec hidden">
-            <div id="season-tabs" class="chips"></div>
-            <div id="ep-list" class="ep-grid"></div>
-        </div>
-        <div class="stage-sec">
-            <div id="stage">
-                <div id="frame-host"></div>
-                <div id="stage-load" class="stage-veil">
-                    <div class="ring"></div><span>Connecting</span>
-                </div>
-            </div>
-            <div class="src-label">Source</div>
-            <div id="sources" class="chips"></div>
+        <div class="sources-bar">
+            <span class="src-label">Sources:</span>
+            <div id="p-sources" class="chips"></div>
         </div>
     </div>
 </div>
 
-<div id="owner" class="overlay hidden">
-    <div class="sheet narrow">
-        <button id="owner-close" class="x">&times;</button>
-        <h2 class="pad-h">Owner Console</h2>
-        <div class="pad">
-            <form id="mk-user" class="stack">
-                <input id="mk-name" type="text" placeholder="Username" required>
-                <input id="mk-pass" type="text" placeholder="Password" required>
-                <select id="mk-role">
-                    <option value="freemium">Freemium — 4 films / 20 episodes daily</option>
-                    <option value="premium">Premium — unlimited</option>
+<!-- OWNER COMMAND CENTER -->
+<div id="owner-modal" class="modal hidden">
+    <div class="modal-content glass wide">
+        <button id="close-owner" class="close-x">&times;</button>
+        <h2 class="glow-text">Owner Command Center</h2>
+        
+        <div class="tabs">
+            <button class="tab-btn active" data-tab="users">Users</button>
+            <button class="tab-btn" data-tab="health">System Health</button>
+            <button class="tab-btn" data-tab="logs">Audit Logs</button>
+        </div>
+
+        <!-- USERS TAB -->
+        <div id="tab-users" class="tab-content">
+            <div class="admin-form">
+                <input type="text" id="new-user" placeholder="Username">
+                <input type="text" id="new-pass" placeholder="Password">
+                <select id="new-role">
+                    <option value="freemium">Freemium</option>
+                    <option value="premium">Premium</option>
                 </select>
-                <button class="btn-accent" type="submit">Create Account</button>
-            </form>
-            <p id="mk-msg" class="msg"></p>
-            <h4 class="sub-h">Accounts</h4>
-            <div id="user-list" class="ulist"></div>
+                <button id="btn-create-user" class="btn-primary">Create User</button>
+            </div>
+            <div id="user-list" class="list"></div>
+        </div>
+
+        <!-- HEALTH TAB -->
+        <div id="tab-health" class="tab-content hidden">
+            <div id="health-stats" class="stats-grid"></div>
+            <div id="provider-status" class="list"></div>
+        </div>
+
+        <!-- LOGS TAB -->
+        <div id="tab-logs" class="tab-content hidden">
+            <div id="audit-list" class="list logs"></div>
         </div>
     </div>
 </div>
